@@ -2,7 +2,7 @@
 #define PM_HEAP_H
 
 /* 10MB */
-#define NALLOC 1024
+#define NALLOC 10 * 1024 * 1024
 
 /*
  * Acts as a descriptor for each
@@ -12,7 +12,6 @@
  */
 typedef struct block_header_t {
   unsigned int size;
-  void* payload;
   struct block_header_t* next;
 } block_header_t;
 
