@@ -15,40 +15,32 @@
  */
 node_t* enqueue(node_t* list, void* element) {
   node_t* newNode = pm_malloc(sizeof(node_t));
-  node_t* oldTail = list->prev;
-
+  if(!newNode) {
+    printf("pm_malloc failed to allocate memory. aborting\n");
+    return NULL;
+  }
+  node_t* oldTail;
+  oldTail = list->prev;
+  newNode->prev = list->prev;
   newNode->data = element;
   newNode->next = list;
-  /* oldTail might be NULL, but that's ok */
-  newNode->prev = oldTail;
-  
   list->prev = newNode;
-
-  /* This might be the first node */
-  if(!list->next) {
-    list->data = NULL;
-    list->next = newNode;
-    newNode->prev = list;
-  }
-  /* not ok for oldTail to be NULL here
-     when we set its next to the new tail */
-  if(oldTail)
-    oldTail->next = newNode;
-
+  oldTail->next = newNode;
   return list;
 }
 
+//TODO: change name to reflect this method is only called
+//because enqueue is called in pm_malloc. Call it something
+//like initialize_list_with_node.  Everywhere else enqueue is used.
 node_t* add_node_to_tail(node_t* list, node_t* new_node) {
   node_t* prevTail = list->prev;
+
   new_node->next = list;
+  new_node->prev = list;
+
   list->prev = new_node;
-  if(!prevTail) {
-    new_node->prev = list;
-    list->next = new_node;
-  } else {
-    new_node->prev = prevTail;
-    prevTail->next = new_node;
-  }
+  list->next = new_node;
+ 
   return list;
 }
 
