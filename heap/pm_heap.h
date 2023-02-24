@@ -12,10 +12,10 @@
  */
 typedef struct block_header_t {
   unsigned int size;
-  void* payload;
-  struct block_header_t* next;
+  void* ptr;
 } block_header_t;
 
 void* pm_malloc(int size);
 void pm_free(void* ptr);
+void print_free_list();
 #endif
