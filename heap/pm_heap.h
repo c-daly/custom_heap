@@ -11,10 +11,11 @@
  * block.
  */
 typedef struct block_header_t {
-  unsigned int size;
-  void* ptr;
+  unsigned int size; /* size of this block */
+  void* ptr; /* points to usable memory beyond header */
 } block_header_t;
 
+/* see pm_heap.c for documentation */
 void* pm_malloc(int size);
 void pm_free(void* ptr);
 void print_free_list();

@@ -14,18 +14,24 @@
  * @param element: data element to store 
  */
 node_t* enqueue(node_t* list, void* element) {
+  if(list->data) {
+    printf("LIST DATA NOT NULL!");
+  }
+  printf("\ninvoking pm_malloc from enqueue");
   node_t* newNode = pm_malloc(sizeof(node_t));
   if(!newNode) {
     printf("pm_malloc failed to allocate memory. aborting\n");
     return NULL;
   }
-  node_t* oldTail;
-  oldTail = list->prev;
+
+  list->prev->next = newNode;
+  newNode->next = list;
   newNode->prev = list->prev;
   newNode->data = element;
-  newNode->next = list;
+  
+  node_t* oldTail = list->prev;
+  //oldTail->next = newNode;
   list->prev = newNode;
-  oldTail->next = newNode;
   return list;
 }
 
@@ -33,6 +39,7 @@ node_t* enqueue(node_t* list, void* element) {
 //because enqueue is called in pm_malloc. Call it something
 //like initialize_list_with_node.  Everywhere else enqueue is used.
 node_t* add_node_to_tail(node_t* list, node_t* new_node) {
+  list->data = NULL;
   node_t* prevTail = list->prev;
 
   new_node->next = list;
@@ -49,19 +56,34 @@ node_t* add_node_to_tail(node_t* list, node_t* new_node) {
  *
  * @param list: list we're removing items from
  */
-void* delist(node_t* list) {
-  /* no work to do */
-  if(!list || !(list->next))
+void* delist(node_t* node) {
+  /* no work */
+  if(!node) {
     return NULL;
+  } else if(node->prev == node->next) {
+  /* if previous equals next, it
+   * means we only have two elements
+   * and we can just null out the 
+   * next/prev pointers on list
+   */
+    node->prev->next = NULL;
+    node->next->prev == NULL;
+    return NULL;
+  } else {
 
-  node_t* oldHead = list->next;
-  node_t* newHead = oldHead->next;
-  void* data = oldHead->data;
+    node_t* prev_node = node->prev;
+    node_t* next_node = node->next;
 
-  newHead->prev = list;
-  free(oldHead);
+    prev_node->next = next_node;
+    next_node->prev = prev_node;
+    //node_t* oldHead = list->next;
+    //node_t* oldTail = list->prev;
 
-  return data;
+    //node_t* newHead = oldHead->next;
+    //void* data = oldHead->data;
+
+    return node;
+  }
 }
 
 /*

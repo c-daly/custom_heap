@@ -20,7 +20,7 @@ typedef struct node_t {
 /* see linkedlist.c for documentation */
 node_t* add_node_to_tail(node_t* list, node_t* new_node);
 node_t* enqueue(node_t* list, void* element);
-void* delist(node_t* list);
+void* delist(node_t* node);
 int qsize(node_t* list);
 node_t* getNextPriorityElement(node_t* list);
 void freeQueue(node_t* list);

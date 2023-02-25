@@ -63,19 +63,27 @@ void init_heap() {
    * before our list is created */
   add_node_to_tail(free_list, first_node);
   heap_size = allocated_so_far;
-  printf("%d bytes allocated for first node and first header\n", allocated_so_far);
 }
 
 /* debug method */
 void print_free_list() {
-  printf("Printing List:\n");
   node_t* tp = free_list->next;
 
+  printf("\nfree_list state:\n****************");
   while(tp->data != NULL) {
     block_header_t* header = (block_header_t*) tp->data;
-    printf("Size: %d  Next: %p\n", header->size, header->ptr);
+    if(header && header->size && header->ptr) {
+      printf("\n(header data)Size: %d  ptr: %p\n(node data)Next: %p, Prev: %p", 
+          header->size,
+          header->ptr,
+          tp->next,
+          tp->prev);
+    } else {
+      printf("header data NULL");
+    }
     tp = tp->next; 
   }
+  printf("\n");
 }
 
 void* pm_malloc(int size) {
@@ -85,25 +93,30 @@ void* pm_malloc(int size) {
   }
   node_t* tp = free_list->next;
 
-  while(tp) {
+  while(tp->data) {
     header = tp->data;
+
     if(header->size >= (size + sizeof(block_header_t))) {
       if((allocated_mem + sizeof(block_header_t) + size) > (allocated_mem + NALLOC)) {
-        printf("SEGFAULT ABORTING!");
         return NULL;
       }
+
       header->size -= (size + sizeof(block_header_t));   
       heap_size += (size + sizeof(block_header_t));
-      freep = (block_header_t*) (allocated_mem + (heap_size - size - sizeof(block_header_t)));
+
+      freep = (block_header_t*) (allocated_mem +
+          (heap_size - size - sizeof(block_header_t)));
+
       freep->size = size + sizeof(block_header_t);
       freep->ptr = (void*)(freep + sizeof(block_header_t));
-      printf("allocating %d bytes\n", freep->size);
-      print_free_list();
+
+      if(header->size == 0) {
+        delist(tp);
+      }
       return freep->ptr;
     }
     tp = tp->next;
   }
-  printf("Memory not found");
   return NULL;
 }
 
