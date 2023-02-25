@@ -17,21 +17,11 @@ typedef struct node_t {
   struct node_t* prev;
 } node_t;
 
-/* The data element for the process_t priority
-   queue */
-typedef struct process_t {
-  int identifier, priority;
-  char* name;
-} process_t;
-
-/* see queue.c for documentation */
+/* see linkedlist.c for documentation */
 node_t* add_node_to_tail(node_t* list, node_t* new_node);
 node_t* enqueue(node_t* list, void* element);
 void* delist(node_t* list);
-process_t* dequeueProcess(node_t* list);
 int qsize(node_t* list);
 node_t* getNextPriorityElement(node_t* list);
-node_t* getLastElement(node_t* list);
-node_t* getFirstElement(node_t* list);
 void freeQueue(node_t* list);
 #endif

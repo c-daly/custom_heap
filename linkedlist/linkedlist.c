@@ -63,30 +63,6 @@ void* delist(node_t* list) {
 
   return data;
 }
-/* 
- * Helper function to extract next highest priority
- * item from the list.
- *
- * @param list: the list that holds the priority
- *               elements.
- */
-node_t* getNextPriorityElement(node_t* list) {
-  node_t* hpElement = list->next;
-  node_t* tp = list->next;
-  process_t* process = tp->data;
-  int currentHighPriority = process->priority;
-
-  while(tp->data) {
-    process = tp->data;
-    if(process->priority > currentHighPriority) {
-      currentHighPriority = process->priority;
-      hpElement = tp;
-    }
-    tp = tp->next;
-  }
-
-  return hpElement;
-}
 
 /*
  * Method reports the number of elements currently
