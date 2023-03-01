@@ -29,7 +29,7 @@ node_t* enqueue(node_t* list, void* element) {
   newNode->prev = list->prev;
   newNode->data = element;
   
-  node_t* oldTail = list->prev;
+  //node_t* oldTail = list->prev;
   //oldTail->next = newNode;
   list->prev = newNode;
   return list;
@@ -39,15 +39,28 @@ node_t* enqueue(node_t* list, void* element) {
 //because enqueue is called in pm_malloc. Call it something
 //like initialize_list_with_node.  Everywhere else enqueue is used.
 node_t* add_node_to_tail(node_t* list, node_t* new_node) {
-  list->data = NULL;
-  node_t* prevTail = list->prev;
+  printf("list: %p, new_node: %p\n", list, new_node);
+  //node_t* old_head = NULL;
+  node_t* old_tail = NULL;
 
   new_node->next = list;
-  new_node->prev = list;
 
+  if(!list->next && !list->prev) {
+    list->next = new_node;
+    list->prev = new_node;
+
+    new_node->next = list;
+    new_node->prev = list;
+    return list;
+  }
+
+  //old_head = list->next;
+  old_tail = list->prev;
+  old_tail->next = new_node;
+  new_node->prev = old_tail;
+  new_node->next = list;
   list->prev = new_node;
-  list->next = new_node;
- 
+
   return list;
 }
 
@@ -67,7 +80,7 @@ void* delist(node_t* node) {
    * next/prev pointers on list
    */
     node->prev->next = NULL;
-    node->next->prev == NULL;
+    node->next->prev = NULL;
     return NULL;
   } else {
 
@@ -94,12 +107,12 @@ void* delist(node_t* node) {
  */
 int qsize(node_t* list) {
   if(!list->next)
-    return 0;
+    return 1;
 
   node_t* tempPtr = list->next;
   int size = 0;
 
-  while(tempPtr->data) {
+  while(tempPtr->data != NULL) {
     size++;
     tempPtr = tempPtr->next;  
   }

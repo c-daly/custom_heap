@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <pthread.h>
 #include "pm_heap.h"
 #include "../linkedlist/linkedlist.h"
 
@@ -11,13 +12,15 @@ static node_t* free_list = NULL;
 
 int header_size = sizeof(block_header_t);
 int node_size = sizeof(node_t); 
-int heap_size = 0; /* amount of allocated heap memory */
 
 static block_header_t* freep = NULL;
 static block_header_t* first_header = NULL;
 static node_t* first_node;
 
+pthread_mutex_t lock;
+
 void* allocated_mem[NALLOC];
+void* max_address = (void*)allocated_mem + NALLOC;
 
 /* this function just needs to create
  * the free_list, which will consist of
@@ -27,20 +30,22 @@ void* allocated_mem[NALLOC];
  * (NALLOC - allocated_so_far)
  */
 void init_heap() {
-  int allocated_so_far = 0;
+  //int allocated_so_far = 0;
 
-  /* root of our free memory list */
+  /* root of our free memory list 
+   * This node will come from the overall 
+   * memory allotment and will never be
+   * available for allocation.
+   * This differs from subsequent nodes
+   * which are included in the size figures
+   * on their headers */
   free_list = (node_t*) (allocated_mem);
 
-  //allocated_so_far += sizeof(node_t);
-  allocated_so_far += node_size;
   
   /* first header for our (currently) only chunk of memory */
-  first_header = (block_header_t*) (allocated_mem + allocated_so_far);
-  first_header->size = NALLOC - allocated_so_far;
-  first_header->ptr = (void*) (first_header + sizeof(block_header_t));
-
-  allocated_so_far += sizeof(block_header_t);
+  first_header = (void*)free_list + node_size;
+  first_header->size = NALLOC - node_size; //allocated_so_far;
+  first_header->ptr = (void*)first_header + sizeof(block_header_t);
 
   /* first data-holding element of free_list. 
    * We're allocating this memory even though no
@@ -51,9 +56,7 @@ void init_heap() {
    * some memory because we can't call pm_malloc from this
    * function.
    */ 
-  first_node = (node_t*)(allocated_mem + allocated_so_far);
-
-  allocated_so_far += sizeof(node_t);
+  first_node = (node_t*)first_header + header_size;
 
   first_node->data = first_header;
   first_node->prev = first_node;
@@ -62,7 +65,6 @@ void init_heap() {
   /* this function allows us to avoid calling pm_malloc
    * before our list is created */
   add_node_to_tail(free_list, first_node);
-  heap_size = allocated_so_far;
 }
 
 /* debug method */
@@ -70,14 +72,16 @@ void print_free_list() {
   node_t* tp = free_list->next;
 
   printf("\nfree_list state:\n****************");
+  printf("\nList size: %d", qsize(free_list));
+  printf("\nList header: %p", free_list);
   while(tp->data != NULL) {
     block_header_t* header = (block_header_t*) tp->data;
     if(header && header->size && header->ptr) {
-      printf("\n(header data)Size: %d  ptr: %p\n(node data)Next: %p, Prev: %p", 
-          header->size,
+      printf("\n(header data)ptr: %p\n(node data)Next: %p, Prev: %p, this: %p\n", 
           header->ptr,
           tp->next,
-          tp->prev);
+          tp->prev,
+          tp);
     } else {
       printf("header data NULL");
     }
@@ -87,45 +91,49 @@ void print_free_list() {
 }
 
 void* pm_malloc(int size) {
-  block_header_t *p, *prevp, *header;
+  block_header_t *header;
+
   if(!freep) {
     init_heap();
   }
   node_t* tp = free_list->next;
 
+  pthread_mutex_lock(&lock);
   while(tp->data) {
     header = tp->data;
 
-    if(header->size >= (size + sizeof(block_header_t))) {
-      if((allocated_mem + sizeof(block_header_t) + size) > (allocated_mem + NALLOC)) {
+    if(header->size > (size + header_size)) {
+
+      int total_new_size = size + header_size;
+      header->size -= total_new_size;  
+      freep = (void*)header + header->size;
+      freep->size = size + header_size;
+      freep->ptr = (void*)freep + sizeof(block_header_t);
+
+      if(((void*)freep + freep->size) > max_address) {
+        pthread_mutex_unlock(&lock);
         return NULL;
       }
-
-      header->size -= (size + sizeof(block_header_t));   
-      heap_size += (size + sizeof(block_header_t));
-
-      freep = (block_header_t*) (allocated_mem +
-          (heap_size - size - sizeof(block_header_t)));
-
-      freep->size = size + sizeof(block_header_t);
-      freep->ptr = (void*)(freep + sizeof(block_header_t));
-
-      if(header->size == 0) {
-        delist(tp);
-      }
-      return freep->ptr;
+      pthread_mutex_unlock(&lock);
+      return freep->ptr; //freep->ptr;
     }
     tp = tp->next;
   }
+  pthread_mutex_unlock(&lock);
   return NULL;
 }
 
 void pm_free(void* ptr) {
-  node_t tempNode;
-  static block_header_t* temp_header;
+  if(!ptr) {
+    return;
+  } else {
 
-  temp_header = ((block_header_t*)ptr - sizeof(block_header_t));
-  heap_size -= (temp_header->size + header_size);
-  enqueue(free_list, temp_header);
-  print_free_list();
+    pthread_mutex_lock(&lock);
+    block_header_t* temp_header = (void*)ptr - sizeof(block_header_t);
+     
+    node_t* temp_node = (node_t*) (temp_header->ptr);
+    temp_node->data =  (void*)ptr - sizeof(block_header_t);//temp_header;
+    add_node_to_tail(free_list, temp_node);
+    pthread_mutex_unlock(&lock);
+  }
 }
