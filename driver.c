@@ -14,6 +14,7 @@ void* allocateAndFreePointer(void* data) {
   void* tempPtr1;
   void* tempPtr2;
   void* tempPtr3;
+  void* tempPtr4;
 
   thread_params_t* params = (thread_params_t*) data;
 
